@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Weather App</title>
+
+    <!-- Polices Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&family=Quicksand:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Phosphor Icons -->
+    <script type="module" src="index.js"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      /* Styles globaux pour les icônes Phosphor */
+      [class*="ph-"] {
+        vertical-align: middle;
+      }
+
+      body {
+        font-family: "Funnel Display", "Inter", "Quicksand", sans-serif;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      #app {
+        width: 100%;
+        max-width: 1200px;
+        display: flex;
+        gap: 30px;
+        z-index: 1;
+        position: relative;
+      }
+
+      /* Animation pour le panneau principal */
+      @keyframes slideInFromLeft {
+        0% {
+          transform: translateX(-100px);
+          opacity: 0;
+        }
+        100% {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+
+      @keyframes fadeInScale {
+        0% {
+          transform: scale(0.9);
+          opacity: 0;
+        }
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+
+      /* Panneau principal gauche avec animation */
+      .main-panel {
+        flex: 1.5;
+        border-radius: 30px;
+        padding: 60px 50px;
+        box-shadow: 0 25px 45px rgba(0, 0, 0, 0.1);
+        min-height: 500px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        position: relative;
+        overflow: hidden;
+        animation: slideInFromLeft 0.8s ease-out;
+      }
+
+      
+
+      .weather-header {
+        color: white;
+        font-size: 1.2rem;
+        font-weight: 300;
+        margin-bottom: 20px;
+        opacity: 0.9;
+        animation: fadeIn 1s ease-out 0.3s both;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(-20px);
+        }
+        to {
+          opacity: 0.9;
+          transform: translateY(0);
+        }
+      }
+
+      .temperature-display {
+        position: relative;
+        z-index: 1;
+        animation: fadeInUp 0.8s ease-out 0.5s both;
+      }
+
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .temperature {
+        font-size: 8rem;
+        font-weight: 200;
+        color: white;
+        line-height: 1;
+        margin-bottom: 10px;
+        text-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+      }
+
+      .temperature sup {
+        font-size: 3rem;
+        position: relative;
+        top: -2rem;
+      }
+
+      .city-name {
+        font-size: 3rem;
+        color: white;
+        font-weight: 300;
+        margin-bottom: 10px;
+      }
+
+      .weather-description {
+        font-size: 1.3rem;
+        color: rgba(255, 255, 255, 0.8);
+        display: flex;
+        align-items: center;
+        gap: 15px;
+      }
+
+      .weather-icon {
+        font-size: 2rem;
+        display: flex;
+        align-items: center;
+        animation: weatherIconFloat 3s ease-in-out infinite;
+      }
+
+      @keyframes weatherIconFloat {
+        0%,
+        100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-5px);
+        }
+      }
+
+      .weather-icon i {
+        display: flex;
+      }
+
+      /* Animations spécifiques pour certaines icônes météo */
+      .weather-icon .ph-sun {
+        animation: rotateSun 15s linear infinite;
+      }
+
+      @keyframes rotateSun {
+        from {
+          transform: rotate(0deg);
+        }
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .weather-icon .ph-lightning {
+        animation: lightning 2s ease-in-out infinite;
+      }
+
+      @keyframes lightning {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.3;
+        }
+      }
+
+      .weather-icon .ph-snowflake {
+        animation: snowFall 3s ease-in-out infinite;
+      }
+
+      @keyframes snowFall {
+        0%,
+        100% {
+          transform: translateY(0) rotate(0deg);
+        }
+        50% {
+          transform: translateY(5px) rotate(180deg);
+        }
+      }
+
+      .date-time {
+        color: rgba(255, 255, 255, 0.6);
+        font-size: 1rem;
+        margin-top: 10px;
+      }
+
+      /* Panneau droit */
+      .side-panel {
+        flex: 1;
+        background: rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(20px);
+        border-radius: 30px;
+        padding: 40px 30px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 25px 45px rgba(0, 0, 0, 0.2);
+        animation: slideInFromRight 0.8s ease-out;
+      }
+
+      @keyframes slideInFromRight {
+        0% {
+          transform: translateX(100px);
+          opacity: 0;
+        }
+        100% {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+
+      /* Barre de recherche avec autocomplétion */
+      .search-container {
+        position: relative;
+        margin-bottom: 40px;
+      }
+
+      #city-input {
+        width: 100%;
+        padding: 15px 50px 15px 20px;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 15px;
+        color: white;
+        font-size: 1rem;
+        outline: none;
+        transition: all 0.3s ease;
+      }
+
+      #city-input::placeholder {
+        color: rgba(255, 255, 255, 0.5);
+      }
+
+      #city-input:focus {
+        background: rgba(255, 255, 255, 0.15);
+        border-color: rgba(255, 255, 255, 0.4);
+      }
+
+      /* Liste d'autocomplétion */
+      .autocomplete-list {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(20px);
+        border-radius: 15px;
+        margin-top: 5px;
+        max-height: 200px;
+        overflow-y: auto;
+        display: none;
+        z-index: 100;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        animation: fadeInDown 0.3s ease-out;
+      }
+
+      @keyframes fadeInDown {
+        from {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .autocomplete-list.active {
+        display: block;
+      }
+
+      .autocomplete-item {
+        padding: 12px 20px;
+        color: rgba(255, 255, 255, 0.8);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      .autocomplete-item:hover,
+      .autocomplete-item.selected {
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+        padding-left: 25px;
+      }
+
+      .autocomplete-item:last-child {
+        border-bottom: none;
+      }
+
+      .autocomplete-item .country {
+        font-size: 0.85rem;
+        color: rgba(255, 255, 255, 0.5);
+        margin-left: 10px;
+      }
+
+      /* Style pour les messages de l'autocomplétion */
+      .autocomplete-item:only-child {
+        color: rgba(255, 255, 255, 0.5);
+        font-style: italic;
+        pointer-events: none;
+      }
+
+      #search-button {
+        position: absolute;
+        right: 5px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        color: white;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+        font-size: 1.2rem;
+      }
+
+      #search-button:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: translateY(-50%) scale(1.1);
+      }
+
+      #search-button i {
+        display: flex;
+      }
+
+      /* Villes populaires */
+      .popular-cities {
+        margin-bottom: 40px;
+      }
+
+      .popular-cities h3 {
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 0.9rem;
+        margin-bottom: 15px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+
+      .city-list {
+        list-style: none;
+      }
+
+      .city-list li {
+        padding: 12px 0;
+        color: rgba(255, 255, 255, 0.8);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      .city-list li:hover {
+        color: white;
+        padding-left: 10px;
+      }
+
+      /* Détails météo */
+      .weather-details {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 20px;
+        padding: 25px;
+      }
+
+      .weather-details h3 {
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 1.1rem;
+        margin-bottom: 20px;
+      }
+
+      .detail-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .detail-item:last-child {
+        border-bottom: none;
+      }
+
+      .detail-label {
+        color: rgba(255, 255, 255, 0.6);
+        font-size: 0.95rem;
+      }
+
+      .detail-value {
+        color: white;
+        font-size: 1.1rem;
+        font-weight: 500;
+      }
+
+      /* Bouton géolocalisation */
+      #geo-button {
+        width: 100%;
+        padding: 15px;
+        background: #ffffff0d;
+        border: none;
+        border-radius: 15px;
+        color: white;
+        font-size: 1rem;
+        cursor: pointer;
+        margin-top: 20px;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+
+      #geo-button i {
+        display: flex;
+        font-size: 1.2rem;
+      }
+
+      #geo-button .ph-circle-notch {
+        animation: spin 1s linear infinite;
+      }
+
+      #geo-button:hover {
+        transform: translateY(-2px);
+        background: rgba(255, 255, 255, 0.15);
+      }
+
+      #geo-button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      /* Animation de chargement */
+      .loading {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        border-top-color: white;
+        animation: spin 1s ease-in-out infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* Responsive */
+      @media (max-width: 968px) {
+        #app {
+          flex-direction: column;
+        }
+
+        .temperature {
+          font-size: 6rem;
+        }
+
+        .city-name {
+          font-size: 2rem;
+        }
+      }
+
+      /* Message d'erreur */
+      .error-message {
+        background: rgba(255, 59, 48, 0.1);
+        border: 1px solid rgba(255, 59, 48, 0.3);
+        border-radius: 10px;
+        padding: 15px;
+        color: #ff9999;
+        margin-top: 20px;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+
+      .error-message i {
+        font-size: 1.3rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <div class="main-panel">
+        <div class="weather-header">the weather</div>
+        <div id="weather-result">
+          <div class="temperature-display">
+            <div class="temperature">--<sup>°</sup></div>
+            <div class="city-name">--</div>
+            <div class="weather-description">
+              <span class="weather-icon"><i class="ph-fill ph-cloud"></i></span>
+              <span>En attente...</span>
+            </div>
+            <div class="date-time"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="side-panel">
+        <div class="search-container">
+          <input
+            type="text"
+            id="city-input"
+            placeholder="Rechercher une ville..."
+            autocomplete="off"
+          />
+          <button id="search-button">
+            <i class="ph ph-magnifying-glass"></i>
+          </button>
+          <div class="autocomplete-list" id="autocomplete-list"></div>
+        </div>
+
+        <div class="popular-cities">
+          <h3>Villes populaires</h3>
+          <ul class="city-list">
+            <li data-city="Paris">Paris</li>
+            <li data-city="London">Londres</li>
+            <li data-city="New York">New York</li>
+            <li data-city="Tokyo">Tokyo</li>
+            <li data-city="Dubai">Dubai</li>
+          </ul>
+        </div>
+
+        <div class="weather-details" id="weather-details">
+          <h3>Détails Météo</h3>
+          <div class="detail-item">
+            <span class="detail-label">Ressenti</span>
+            <span class="detail-value" id="feels-like">--°C</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Humidité</span>
+            <span class="detail-value" id="humidity">--%</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Vent</span>
+            <span class="detail-value" id="wind">-- km/h</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Pression</span>
+            <span class="detail-value" id="pressure">-- hPa</span>
+          </div>
+        </div>
+
+        <button id="geo-button">
+          <i class="ph ph-map-pin"></i> Ma position actuelle
+        </button>
+      </div>
+    </div>
+  </body>
+</html>
