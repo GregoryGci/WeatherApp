@@ -1,13 +1,21 @@
+// =============================================================================
+// WEATHER APP - APPLICATION MÉTÉO INTERACTIVE
+// =============================================================================
+
 let debounceTimer;
+
+// =============================================================================
+// SECTION 1: CLASSE PRINCIPALE ET CONFIGURATION
+// =============================================================================
 
 class WeatherApp {
   constructor() {
     this.apiKey = "945b0e63cb828d5c40303cadf5ed6aab";
     this.baseUrl = "https://api.openweathermap.org/data/2.5";
-    this.history = [];
     this.selectedIndex = -1;
   }
 
+  // Récupérer la météo par nom de ville
   async getWeather(city) {
     try {
       const response = await fetch(
@@ -25,6 +33,7 @@ class WeatherApp {
     }
   }
 
+  // Récupérer la météo par coordonnées
   async getWeatherByCoords(lat, lon) {
     try {
       const response = await fetch(
@@ -42,6 +51,7 @@ class WeatherApp {
     }
   }
 
+  // Obtenir la position de l'utilisateur
   getPosition() {
     return new Promise((resolve, reject) => {
       if (!navigator.geolocation) {
@@ -51,12 +61,14 @@ class WeatherApp {
     });
   }
 
+  // Récupérer la météo de la position actuelle
   async getCurrentLocationWeather() {
     const position = await this.getPosition();
     const { latitude, longitude } = position.coords;
     return await this.getWeatherByCoords(latitude, longitude);
   }
 
+  // Rechercher des villes via API
   async searchCities(query) {
     if (query.length < 2) return [];
 
@@ -89,59 +101,14 @@ class WeatherApp {
   }
 }
 
-// Instance de l'app
+// Instance globale de l'application
 const app = new WeatherApp();
 
-// Fonction pour afficher la météo avec animation
-function displayWeather(data) {
-  // Ajouter la classe d'animation de transition
-  const mainPanel = document.querySelector(".main-panel");
-  mainPanel.classList.add("weather-transition");
+// =============================================================================
+// SECTION 2: FONCTIONS UTILITAIRES
+// =============================================================================
 
-  // Retirer la classe après l'animation
-  setTimeout(() => {
-    mainPanel.classList.remove("weather-transition");
-  }, 600);
-
-  // Panneau principal
-  const weatherResult = document.getElementById("weather-result");
-  const weatherIcon = getWeatherIcon(data.weather[0].main);
-
-  weatherResult.innerHTML = `
-    <div class="temperature-display">
-        <div class="temperature">${Math.round(data.main.temp)}<sup>°</sup></div>
-        <div class="city-name">${data.name}</div>
-        <div class="weather-description">
-            <span class="weather-icon">${weatherIcon}</span>
-            <span>${data.weather[0].description}</span>
-        </div>
-        <div class="date-time">${new Date().toLocaleDateString("fr-FR", {
-          weekday: "long",
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-        })}</div>
-    </div>
-  `;
-
-  // Détails météo
-  document.getElementById("feels-like").textContent = `${Math.round(
-    data.main.feels_like
-  )}°C`;
-  document.getElementById("humidity").textContent = `${data.main.humidity}%`;
-  document.getElementById("wind").textContent = `${Math.round(
-    data.wind.speed * 3.6
-  )} km/h`;
-  document.getElementById("pressure").textContent = `${data.main.pressure} hPa`;
-
-  // Changer la couleur de fond selon la météo
-  updateBackground(data.weather[0].main);
-  updateMainPanel(data.weather[0].main);
-}
-
-// Obtenir l'icône météo avec Phosphor Icons
+// Obtenir l'icône météo correspondant à la condition
 function getWeatherIcon(weatherMain) {
   const icons = {
     Clear: '<i class="ph-fill ph-sun"></i>',
@@ -157,22 +124,279 @@ function getWeatherIcon(weatherMain) {
   return icons[weatherMain] || '<i class="ph-fill ph-cloud-sun"></i>';
 }
 
-// Mettre à jour le fond selon la météo
-function updateBackground(weatherMain) {
+// Afficher un message d'erreur
+function displayError(message) {
+  const weatherResult = document.getElementById("weather-result");
+  weatherResult.innerHTML = `
+    <div class="error-message">
+        <i class="ph ph-warning-circle"></i> ${message}
+    </div>
+  `;
+}
+
+// =============================================================================
+// SECTION 3: FONCTIONS D'ANIMATION
+// =============================================================================
+
+// Animer le changement de valeurs numériques avec défilement fluide
+function animateNumber(element, targetValue, suffix = '', duration = 1000) {
+  const startValue = parseFloat(element.textContent.replace(/[^\d.-]/g, '')) || 0;
+  const difference = targetValue - startValue;
+  const startTime = performance.now();
+  
+  // Ajouter la classe d'animation pour les effets CSS
+  element.classList.add('animating-number');
+  
+  function updateNumber(currentTime) {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    
+    // Fonction d'easing cubic ease-out pour une animation fluide
+    const easedProgress = 1 - Math.pow(1 - progress, 3);
+    
+    const currentValue = startValue + (difference * easedProgress);
+    
+    // Arrondi intelligent selon le type de valeur
+    let displayValue;
+    if (suffix.includes('%') || suffix.includes('hPa')) {
+      displayValue = Math.round(currentValue);
+    } else {
+      displayValue = Math.round(currentValue * 10) / 10;
+    }
+    
+    element.textContent = displayValue + suffix;
+    
+    if (progress < 1) {
+      requestAnimationFrame(updateNumber);
+    } else {
+      element.classList.remove('animating-number');
+    }
+  }
+  
+  requestAnimationFrame(updateNumber);
+}
+
+// Animer le changement de texte avec effet de défilement de lettres
+function animateText(element, targetText, duration = 800) {
+  const startText = element.textContent || '';
+  const maxLength = Math.max(startText.length, targetText.length);
+  const startTime = performance.now();
+  
+  element.classList.add('animating-number');
+  
+  function updateText(currentTime) {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    
+    // Fonction d'easing cubic ease-out
+    const easedProgress = 1 - Math.pow(1 - progress, 3);
+    
+    let displayText = '';
+    const currentLength = Math.floor(easedProgress * maxLength);
+    
+    for (let i = 0; i < maxLength; i++) {
+      if (i < currentLength) {
+        displayText += targetText[i] || '';
+      } else if (i < startText.length) {
+        // Afficher des caractères aléatoires pendant la transition
+        const randomChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+        displayText += randomChars[Math.floor(Math.random() * randomChars.length)];
+      }
+    }
+    
+    element.textContent = displayText;
+    
+    if (progress < 1) {
+      requestAnimationFrame(updateText);
+    } else {
+      element.textContent = targetText;
+      element.classList.remove('animating-number');
+    }
+  }
+  
+  requestAnimationFrame(updateText);
+}
+
+// Animer la température principale avec un effet plus dramatique
+function animateMainTemperature(element, targetValue, duration = 1200) {
+  const startValue = parseFloat(element.textContent.replace(/[^\d.-]/g, '')) || 0;
+  const difference = targetValue - startValue;
+  const startTime = performance.now();
+  
+  element.classList.add('animating-number');
+  
+  function updateTemp(currentTime) {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    
+    // Easing quartic ease-out pour un ralentissement progressif
+    const easedProgress = 1 - Math.pow(1 - progress, 4);
+    
+    const currentValue = startValue + (difference * easedProgress);
+    const displayValue = Math.round(currentValue);
+    
+    element.innerHTML = displayValue + '<sup>°</sup>';
+    
+    if (progress < 1) {
+      requestAnimationFrame(updateTemp);
+    } else {
+      element.classList.remove('animating-number');
+    }
+  }
+  
+  requestAnimationFrame(updateTemp);
+}
+
+// Animer les icônes Phosphor avec effet fade in/out
+function animateIcon(element, newIconHTML, duration = 600) {
+  // Phase 1: Fade out de l'ancienne icône
+  element.style.transition = `opacity ${duration/2}ms ease-out`;
+  element.style.opacity = '0';
+  
+  // Phase 2: Changer l'icône et fade in
+  setTimeout(() => {
+    element.innerHTML = newIconHTML;
+    element.style.opacity = '1';
+    element.style.transition = `opacity ${duration/2}ms ease-in`;
+    
+    // Nettoyer les styles après l'animation
+    setTimeout(() => {
+      element.style.transition = '';
+    }, duration/2);
+  }, duration/2);
+}
+
+// =============================================================================
+// SECTION 4: FONCTIONS DE GESTION DU LOADER
+// =============================================================================
+
+// Afficher le loader de chargement initial
+function showTransitionLoader() {
+  // Supprimer un éventuel loader existant
+  const existingLoader = document.getElementById("weather-transition-loader");
+  if (existingLoader) {
+    existingLoader.remove();
+  }
+  
+  const loader = document.createElement("div");
+  loader.id = "weather-transition-loader";
+  
+  // HTML du spinner avec styles inline
+  const spinnerHTML = `
+    <div style="
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 1s linear infinite;
+      margin-right: 12px;
+    "></div>
+    <span>Chargement de la météo...</span>
+  `;
+  
+  loader.innerHTML = spinnerHTML;
+  
+  // Configuration complète du loader
+  loader.style.cssText = `
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    background: rgba(0, 0, 0, 0.85) !important;
+    backdrop-filter: blur(15px) !important;
+    border-radius: 15px !important;
+    padding: 25px 35px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: white !important;
+    font-size: 1rem !important;
+    font-family: 'Inter', sans-serif !important;
+    z-index: 99999 !important;
+    opacity: 0 !important;
+    transition: opacity 0.3s ease !important;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    pointer-events: none !important;
+  `;
+  
+  document.body.appendChild(loader);
+
+  // Animation d'apparition
+  loader.offsetHeight; // Force reflow
+  requestAnimationFrame(() => {
+    loader.style.opacity = "1";
+  });
+
+  return loader;
+}
+
+// Masquer et supprimer le loader
+function hideTransitionLoader(loader) {
+  if (loader && loader.parentNode) {
+    loader.style.opacity = "0";
+    setTimeout(() => {
+      if (loader.parentNode) {
+        loader.parentNode.removeChild(loader);
+      }
+    }, 300);
+  }
+}
+
+// =============================================================================
+// SECTION 5: FONCTIONS DE TRANSITION DES BACKGROUNDS
+// =============================================================================
+
+// Gérer la transition du background de couleur du body
+function updateBackgroundWithTransition(weatherMain) {
   const body = document.body;
+  
   const backgrounds = {
-    Clear: "#8ab4deff",
-    Clouds: "#86b8d8ff",
-    Rain: "#757a7fff ",
+    Clear: "#4d7eb1ff",
+    Clouds: "#33697fff",
+    Rain: "#596663ff",
     Snow: "#787879ff",
     Thunderstorm: "#2b2b39ff",
     default: "#1e3c72",
   };
-  body.style.background = backgrounds[weatherMain] || backgrounds.default;
-  body.style.transition = "background 0.5s ease";
+
+  const newBackground = backgrounds[weatherMain] || backgrounds.default;
+  
+  // Créer un overlay temporaire pour la transition fluide
+  const overlay = document.createElement('div');
+  overlay.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: ${newBackground};
+    opacity: 0;
+    z-index: -1;
+    transition: opacity 1s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+  `;
+  
+  document.body.appendChild(overlay);
+  
+  // Démarrer la transition de fondu
+  requestAnimationFrame(() => {
+    overlay.style.opacity = '1';
+  });
+  
+  // Finaliser la transition
+  setTimeout(() => {
+    body.style.background = newBackground;
+    if (overlay.parentNode) {
+      overlay.parentNode.removeChild(overlay);
+    }
+  }, 1000);
 }
 
-function updateMainPanel(weatherMain) {
+// Gérer la transition du panneau principal avec couleurs de texte dynamiques
+function updateMainPanelWithTransition(weatherMain) {
   const mainPanel = document.querySelector(".main-panel");
 
   const backgrounds = {
@@ -181,8 +405,9 @@ function updateMainPanel(weatherMain) {
     Rain: 'url("./images/rainy-sky.jpg")',
     Snow: 'url("./images/snowy-sky.jpg")',
     Thunderstorm: 'url("./images/thunderstorm-sky.jpg")',
-    default: 'url("./images/default-sky.jpg")',
+    default: 'url("./images/clear-sky.jpg")',
   };
+  
   const textColors = {
     Clear: "#d5ebf7ff",
     Clouds: "#607c8cff",
@@ -192,36 +417,138 @@ function updateMainPanel(weatherMain) {
     default: "#FFFFFF",
   };
 
-  mainPanel.style.background = `
-    linear-gradient(rgba(0, 0, 0, 0.3), rgba(255, 255, 255, 0.5)),
-    ${backgrounds[weatherMain] || backgrounds.default}
-  `;
-  mainPanel.style.backgroundSize = "cover";
-  mainPanel.style.backgroundPosition = "center";
-  mainPanel.style.backgroundRepeat = "no-repeat";
-  mainPanel.style.transition = "background 0.5s ease";
-
+  const newImageUrl = backgrounds[weatherMain] || backgrounds.default;
   const color = textColors[weatherMain] || textColors.default;
-
-  // Appliquer la couleur à tous les éléments texte
+  
+  // Créer un overlay temporaire pour la transition d'image
+  const imageOverlay = document.createElement('div');
+  imageOverlay.style.cssText = `
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(rgba(0, 0, 0, 0.3), rgba(255, 255, 255, 0.5)), ${newImageUrl};
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    opacity: 0;
+    transition: opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 30px;
+    z-index: 0;
+  `;
+  
+  mainPanel.appendChild(imageOverlay);
+  
+  // Démarrer la transition de fondu
+  requestAnimationFrame(() => {
+    imageOverlay.style.opacity = '1';
+  });
+  
+  // Appliquer la couleur à tous les éléments texte avec transition
   const textElements = mainPanel.querySelectorAll(
     ".temperature, .city-name, .weather-description, .date-time"
   );
   textElements.forEach((element) => {
+    element.style.transition = "color 0.6s ease";
     element.style.color = color;
   });
+  
+  // Finaliser la transition
+  setTimeout(() => {
+    mainPanel.style.background = `
+      linear-gradient(rgba(0, 0, 0, 0.3), rgba(255, 255, 255, 0.5)),
+      ${newImageUrl}
+    `;
+    mainPanel.style.backgroundSize = "cover";
+    mainPanel.style.backgroundPosition = "center";
+    mainPanel.style.backgroundRepeat = "no-repeat";
+    
+    if (imageOverlay.parentNode) {
+      imageOverlay.parentNode.removeChild(imageOverlay);
+    }
+  }, 1200);
 }
 
-// Fonction d'autocomplétion avec API
+// =============================================================================
+// SECTION 6: FONCTION PRINCIPALE D'AFFICHAGE
+// =============================================================================
+
+// Afficher les données météo avec toutes les animations synchrones
+function displayWeather(data) {
+  // Référence des éléments DOM
+  const weatherResult = document.getElementById("weather-result");
+  const weatherIcon = getWeatherIcon(data.weather[0].main);
+
+  // Vérifier si c'est la première fois ou si le HTML existe déjà
+  let tempElement = document.querySelector('.temperature');
+  if (!tempElement) {
+    // Première initialisation - créer le HTML
+    weatherResult.innerHTML = `
+      <div class="temperature-display">
+          <div class="temperature">--<sup>°</sup></div>
+          <div class="city-name">--</div>
+          <div class="weather-description">
+              <span class="weather-icon"><i class="ph-fill ph-cloud"></i></span>
+              <span>En attente...</span>
+          </div>
+          <div class="date-time"></div>
+      </div>
+    `;
+  }
+
+  // Lancer les transitions de background immédiatement
+  updateBackgroundWithTransition(data.weather[0].main);
+  updateMainPanelWithTransition(data.weather[0].main);
+
+  // Démarrer toutes les animations simultanément après un délai initial
+  setTimeout(() => {
+    // Animation de la température principale (chiffres)
+    tempElement = document.querySelector('.temperature');
+    animateMainTemperature(tempElement, Math.round(data.main.temp));
+    
+    // Animation du nom de ville (texte)
+    animateText(document.querySelector('.city-name'), data.name, 300);
+    
+    // Animation de la description météo (texte)
+    animateText(document.querySelector('.weather-description span:last-child'), data.weather[0].description, 300);
+    
+    // Animation de l'icône météo avec fade in/out
+    animateIcon(document.querySelector('.weather-icon'), weatherIcon, 300);
+    
+    // Animation de la date/heure (texte)
+    const dateTimeText = new Date().toLocaleDateString("fr-FR", {
+      weekday: "long",
+      year: "numeric", 
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    animateText(document.querySelector('.date-time'), dateTimeText, 500);
+    
+    // Animations simultanées de tous les détails météo (chiffres)
+    animateNumber(document.getElementById("feels-like"), Math.round(data.main.feels_like), "°C", 800);
+    animateNumber(document.getElementById("humidity"), data.main.humidity, "%", 800);
+    animateNumber(document.getElementById("wind"), Math.round(data.wind.speed * 3.6), " km/h", 800);
+    animateNumber(document.getElementById("pressure"), data.main.pressure, " hPa", 800);
+  }, 400);
+}
+
+// =============================================================================
+// SECTION 7: SYSTÈME D'AUTOCOMPLÉTION
+// =============================================================================
+
+// Configuration de l'autocomplétion pour la recherche de villes
 function setupAutocomplete() {
   const input = document.getElementById("city-input");
   const autocompleteList = document.getElementById("autocomplete-list");
 
+  // Gestion de la saisie avec debounce
   input.addEventListener("input", async function () {
     const value = this.value.trim();
     app.selectedIndex = -1;
 
-    // Clear previous timer
     clearTimeout(debounceTimer);
 
     if (value.length < 2) {
@@ -229,12 +556,12 @@ function setupAutocomplete() {
       return;
     }
 
-    // Afficher un indicateur de chargement
+    // Afficher un indicateur de recherche
     autocompleteList.innerHTML =
       '<div class="autocomplete-item">Recherche...</div>';
     autocompleteList.classList.add("active");
 
-    // Debounce pour éviter trop d'appels API
+    // Debounce pour optimiser les appels API
     debounceTimer = setTimeout(async () => {
       const cities = await app.searchCities(value);
 
@@ -247,6 +574,7 @@ function setupAutocomplete() {
         return;
       }
 
+      // Générer la liste des suggestions
       autocompleteList.innerHTML = "";
       cities.forEach((city, index) => {
         const item = document.createElement("div");
@@ -262,10 +590,10 @@ function setupAutocomplete() {
         });
         autocompleteList.appendChild(item);
       });
-    }, 300); // Attendre 300ms avant de faire l'appel API
+    }, 100);
   });
 
-  // Navigation au clavier
+  // Navigation au clavier dans l'autocomplétion
   input.addEventListener("keydown", function (e) {
     const items = autocompleteList.querySelectorAll(
       ".autocomplete-item:not(:first-child)"
@@ -288,7 +616,7 @@ function setupAutocomplete() {
     }
   });
 
-  // Fermer l'autocomplétion quand on clique ailleurs
+  // Fermer l'autocomplétion lors du clic ailleurs
   document.addEventListener("click", function (e) {
     if (!e.target.closest(".search-container")) {
       autocompleteList.classList.remove("active");
@@ -296,7 +624,22 @@ function setupAutocomplete() {
   });
 }
 
-// Nouvelle fonction pour rechercher par coordonnées (plus précis)
+// Mettre à jour la sélection visuelle dans l'autocomplétion
+function updateSelection(items) {
+  items.forEach((item, index) => {
+    if (index === app.selectedIndex) {
+      item.classList.add("selected");
+    } else {
+      item.classList.remove("selected");
+    }
+  });
+}
+
+// =============================================================================
+// SECTION 8: FONCTIONS DE RECHERCHE MÉTÉO
+// =============================================================================
+
+// Rechercher la météo par coordonnées (plus précis que par nom)
 async function searchWeatherByCoords(lat, lon, cityName) {
   const button = document.getElementById("search-button");
   button.innerHTML = '<span class="loading"></span>';
@@ -319,27 +662,7 @@ async function searchWeatherByCoords(lat, lon, cityName) {
   }
 }
 
-function updateSelection(items) {
-  items.forEach((item, index) => {
-    if (index === app.selectedIndex) {
-      item.classList.add("selected");
-    } else {
-      item.classList.remove("selected");
-    }
-  });
-}
-
-// Afficher une erreur
-function displayError(message) {
-  const weatherResult = document.getElementById("weather-result");
-  weatherResult.innerHTML = `
-    <div class="error-message">
-        <i class="ph ph-warning-circle"></i> ${message}
-    </div>
-  `;
-}
-
-// Recherche de ville
+// Rechercher la météo par nom de ville
 async function searchWeather() {
   const city = document.getElementById("city-input").value.trim();
   if (!city) return;
@@ -361,7 +684,11 @@ async function searchWeather() {
   }
 }
 
-// Event listeners
+// =============================================================================
+// SECTION 9: GESTIONNAIRES D'ÉVÉNEMENTS
+// =============================================================================
+
+// Événements du bouton de recherche
 document
   .getElementById("search-button")
   .addEventListener("click", searchWeather);
@@ -372,16 +699,16 @@ document.getElementById("city-input").addEventListener("keypress", (e) => {
   }
 });
 
-// Villes populaires
+// Événements des villes populaires
 document.querySelectorAll(".city-list li").forEach((item) => {
   item.addEventListener("click", async () => {
     const city = item.dataset.city;
     document.getElementById("city-input").value = city;
-    await searchWeather();
+    searchWeather();
   });
 });
 
-// Géolocalisation
+// Événement du bouton de géolocalisation
 document.getElementById("geo-button").addEventListener("click", async () => {
   const button = document.getElementById("geo-button");
   button.innerHTML = '<i class="ph ph-circle-notch"></i> Localisation...';
@@ -398,16 +725,40 @@ document.getElementById("geo-button").addEventListener("click", async () => {
   }
 });
 
-// Initialisation
-window.addEventListener("load", async () => {
-  // Initialiser l'autocomplétion
-  setupAutocomplete();
+// =============================================================================
+// SECTION 10: INITIALISATION DE L'APPLICATION
+// =============================================================================
 
-  // Charger Paris par défaut
+// Fonction d'initialisation avec géolocalisation intelligente
+async function initializeApp() {
+  // Afficher le loader de chargement sans masquer le main-panel
+  const loader = showTransitionLoader();
+  
   try {
-    const data = await app.getWeather("Paris");
+    // Tentative de géolocalisation en premier
+    const data = await app.getCurrentLocationWeather();
     displayWeather(data);
-  } catch (error) {
-    console.error("Erreur au chargement initial");
+  } catch (geoError) {
+    // Fallback sur Paris si la géolocalisation échoue
+    try {
+      const data = await app.getWeather("Paris");
+      displayWeather(data);
+    } catch (parisError) {
+      displayError("Impossible de charger les données météo");
+    }
+  } finally {
+    // Masquer le loader une fois les données chargées
+    setTimeout(() => {
+      hideTransitionLoader(loader);
+    }, 500);
   }
+}
+
+// Point d'entrée de l'application
+window.addEventListener("load", async () => {
+  // Initialiser le système d'autocomplétion
+  setupAutocomplete();
+  
+  // Lancer l'initialisation de l'application
+  await initializeApp();
 });

@@ -11,6 +11,10 @@
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&family=Quicksand:wght@300;400;500;600&display=swap"
       rel="stylesheet"
+      <link
+      rel="preconnect"
+      href="https://fonts.gstatic.com"
+      crossorigin
     />
 
     <!-- Phosphor Icons -->
@@ -47,30 +51,7 @@
         position: relative;
       }
 
-      /* Animation pour le panneau principal */
-      @keyframes slideInFromLeft {
-        0% {
-          transform: translateX(-100px);
-          opacity: 0;
-        }
-        100% {
-          transform: translateX(0);
-          opacity: 1;
-        }
-      }
-
-      @keyframes fadeInScale {
-        0% {
-          transform: scale(0.9);
-          opacity: 0;
-        }
-        100% {
-          transform: scale(1);
-          opacity: 1;
-        }
-      }
-
-      /* Panneau principal gauche avec animation */
+      /* Panneau principal gauche - animations slideIn supprimées */
       .main-panel {
         flex: 1.5;
         border-radius: 30px;
@@ -82,46 +63,24 @@
         justify-content: space-between;
         position: relative;
         overflow: hidden;
-        animation: slideInFromLeft 0.8s ease-out;
       }
-
-      
 
       .weather-header {
-        color: white;
-        font-size: 1.2rem;
+        font-family: "Libertinus Serif", serif;
         font-weight: 300;
+        color: white;
+        font-size: 1.9rem;
         margin-bottom: 20px;
         opacity: 0.9;
-        animation: fadeIn 1s ease-out 0.3s both;
-      }
-
-      @keyframes fadeIn {
-        from {
-          opacity: 0;
-          transform: translateY(-20px);
-        }
-        to {
-          opacity: 0.9;
-          transform: translateY(0);
-        }
+        z-index: 10;
+        position: relative;
+        font-style: italic;
+        opacity: 0.6;
       }
 
       .temperature-display {
         position: relative;
         z-index: 1;
-        animation: fadeInUp 0.8s ease-out 0.5s both;
-      }
-
-      @keyframes fadeInUp {
-        from {
-          opacity: 0;
-          transform: translateY(30px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
       }
 
       .temperature {
@@ -223,27 +182,15 @@
         margin-top: 10px;
       }
 
-      /* Panneau droit */
+      /* Panneau droit - animation slideIn supprimée */
       .side-panel {
         flex: 1;
-        background: rgba(0, 0, 0, 0.3);
+        background: rgba(122, 121, 121, 0.3);
         backdrop-filter: blur(20px);
         border-radius: 30px;
         padding: 40px 30px;
         border: 1px solid rgba(255, 255, 255, 0.1);
         box-shadow: 0 25px 45px rgba(0, 0, 0, 0.2);
-        animation: slideInFromRight 0.8s ease-out;
-      }
-
-      @keyframes slideInFromRight {
-        0% {
-          transform: translateX(100px);
-          opacity: 0;
-        }
-        100% {
-          transform: translateX(0);
-          opacity: 1;
-        }
       }
 
       /* Barre de recherche avec autocomplétion */
@@ -422,7 +369,7 @@
       }
 
       .detail-label {
-        color: rgba(255, 255, 255, 0.6);
+        color: #fff;
         font-size: 0.95rem;
       }
 
@@ -478,6 +425,41 @@
         border-radius: 50%;
         border-top-color: white;
         animation: spin 1s ease-in-out infinite;
+      }
+
+      /* Spinner pour le loader de transition météo */
+      .transition-spinner {
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        border-top-color: white;
+        animation: spin 1s ease-in-out infinite;
+      }
+
+      /* Animation pour les chiffres qui changent */
+      .temperature {
+        transition: transform 0.3s ease;
+      }
+
+      .detail-value {
+        position: relative;
+      }
+
+      /* Animation de pulsation légère pour les valeurs qui changent */
+      @keyframes numberPulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.8;
+        }
+      }
+
+      .animating-number {
+        animation: numberPulse 0.1s ease-in-out;
       }
 
       @keyframes spin {
